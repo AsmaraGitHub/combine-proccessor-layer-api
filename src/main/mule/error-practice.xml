@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config-error1" doc:name="HTTP Listener config" doc:id="73d16921-45ab-41a6-8027-bbf4f20150f5" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:listener-config name="HTTP_Listener_config_gather" doc:name="HTTP Listener config" doc:id="4e79b0ab-8764-4574-a832-ee2be182cc90" >
+		<http:listener-connection host="0.0.0.0" port="8084" />
+	</http:listener-config>
+	<flow name="error-practiceFlow" doc:id="f528e2aa-a419-4a87-a570-c703d3bba156" >
+		<http:listener doc:name="Listener" doc:id="1bdf0d52-30d1-49d2-bd80-669eedff7f7a" path="/error1" config-ref="HTTP_Listener_config-error1">
+			<http:error-response>
+				<http:body ><![CDATA[#[%dw 2.0
+output text/plain
+---
+error.description]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="apple" doc:name="apple" doc:id="0e03db18-303f-4bb1-b993-a14a5d34e37f" variableName="fruit"/>
+		<flow-ref doc:name="Flow Reference" doc:id="756e664e-d2bb-4312-95a5-021a9428e865" name="error-practiceFlow1"/>
+		<ee:transform doc:name="SUCCESS" doc:id="c3cd3f9c-450f-4900-9203-ea5942a4974b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"SUCCESS"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="ad7636b2-5ef0-4c97-80e2-07fa147643c4" message="#[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="a56b9e92-5036-4989-a1fa-32e4c98371eb" name="error-practiceFlow2"/>
+	</flow>
+	<flow name="error-practiceFlow1" doc:id="26c8f0ed-4b79-4f72-8086-8772accc7abe">
+		<try doc:name="Try" doc:id="0855c6c9-9d4e-4c95-83d6-49bdc75ed100" >
+			<ee:transform doc:name="Transform Message" doc:id="2e8f285f-0791-45e2-8a35-7db72b26463b" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cc65e163-0904-4ec9-bca3-185c35774b62" type="HTTP:CONNECTIVITY">
+					<ee:transform doc:name="Transform Message" doc:id="e9836c9c-3c33-457c-8e71-254897e0720f">
+						<ee:message>
+							<ee:set-payload><![CDATA["Error occured in try block"]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="6a2d75bf-f9bc-4ef6-9ed0-8eceb2346b1d" message="#[payload]" />
+				</on-error-continue>
+				<!-- [STUDIO:"On Error Propagate"]<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="fd4e5acc-e687-4e7f-93fd-6eb2b15f182e" type="HTTP:CONNECTIVITY">
+				</on-error-propagate> [STUDIO] -->
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="610fd992-7b43-4b03-ab69-58904c18eb23" message="#[payload]" />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7e9695c6-cf77-4389-9331-21a8b085c2b0" type="HTTP:BAD_GATEWAY">
+				<ee:transform doc:name="Transform Message" doc:id="9ec3cbb1-ae1a-4561-95bc-c3d85435957b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: {
+    description: "error.description"
+  }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="8b3c526a-cb55-4c87-ba8c-bb35d00d93ee" message="#[payload]" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<error-handler name="error-practiceError_Handler" doc:id="4c29434f-60a2-478a-8d75-f1e4a168e40b" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="9d6149aa-8c88-44b9-a0f9-4e9436bbbed6" type="ANY">
+			<ee:transform doc:name="Transform Message" doc:id="b9377fc6-7c82-4d67-95ef-6b987dd7c7b0" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	error:{
+	error:"error.Description"
+	}
+	
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="21f49d94-c8e5-4ec9-a166-6fb188100ed9" message="#[payload]"/>
+		</on-error-continue>
+	</error-handler>
+	<flow name="error-practiceFlow2" doc:id="a660a932-9762-4ad6-9e7b-d54884ed08ba" >
+		<http:listener doc:name="Listener" doc:id="ca38d6ee-f833-4299-b49c-c4bb544f3e1f" path="/raiseError" config-ref="HTTP_Listener_config-error1"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="801eae31-9580-41b6-bb13-b0d3290e7aa0" />
+		<set-variable value="#[attributes.queryParams.airline]" doc:name="Set Variable" doc:id="45b93271-62c2-4afe-ac15-af6969c91dd4" variableName="airlinecheck"/>
+		<choice doc:name="Choice" doc:id="3c3453aa-0627-4b9e-b401-d2422d00e092" >
+			<when expression='#[vars.airlinecheck == "delta"]'>
+				<try doc:name="Try" doc:id="e584a54d-1280-4299-abf1-33b473197613" >
+					<http:request method="POST" doc:name="DELTA REQUEST" doc:id="a00baf9a-7ef5-4cf4-ae4b-69b2204bf0dc" config-ref="HTTP_Request_configuration-delta" path="${delta.path}" >
+						<http:query-params ><![CDATA[#[output application/json
+---
+{
+    "trip": "true",
+    "round_trip": "true",
+    "connection": "false"
+}]]]></http:query-params>
+					</http:request>
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="563a427a-76a1-4236-8fcd-3ff553a95b98" >
+							<ee:transform doc:name="Transform Message" doc:id="58e4581f-08bd-4598-a2df-47a51344507c" >
+								<ee:message >
+									<ee:set-payload ><![CDATA["Error Ocured at Delta Airline Try scop"]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<logger level="INFO" doc:name="Logger" doc:id="214990e4-c76a-4fff-a8b6-292166b85298" message="#[payload]"/>
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</when>
+			<when expression='#[vars.airlinecheck == "united"]'>
+				<try doc:name="Try" doc:id="a9585e27-c9e9-48bd-b5bc-a1d609f29625">
+					<http:request method="POST" doc:name="UNITED REQUEST" doc:id="dd501996-a0da-47f9-8ed4-aba47cee1ef9" path="${united.path}" config-ref="HTTP_Request_configuratio_united">
+					<http:query-params><![CDATA[#[output application/json
+---
+{
+    "trip": "true",
+    "round_trip": "true",
+    "connection": "false"
+}]]]></http:query-params>
+				</http:request>
+					<error-handler>
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7ff4b832-9228-4e6a-85cd-e8f9552a7e93">
+							<ee:transform doc:name="Transform Message" doc:id="cbe6ae3b-a0fe-4c83-b383-b7642a85b604">
+								<ee:message>
+									<ee:set-payload><![CDATA["Error occured at united Airline"]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<logger level="INFO" doc:name="Logger" doc:id="20501387-b7ad-4a3b-b5ce-7b1486fc0066" message="#[payload]" />
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</when>
+			<otherwise>
+				<flow-ref doc:name="Flow Reference" doc:id="8cb9eda8-dd44-4dfc-b1df-8740e5b5600a" name="error-practiceFlow3"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="748009a3-f2e8-4d61-8458-f2812faff29d" message="#[payload]"/>
+	</flow>
+	<flow name="error-practiceFlow3" doc:id="d1da7cea-3a98-43f6-9d30-485042b9bd2c" >
+		<scatter-gather doc:name="Scatter-Gather" doc:id="36e54a11-5d86-4f82-bef8-190ef20e6f60" timeout="60000" maxConcurrency="3">
+			<route >
+				<http:request method="POST" doc:name="DELTA REQUEST" doc:id="7ba1ced5-8a82-4438-931c-e6b97b6b071d" path="${delta.path}" config-ref="HTTP_Request_configuration-delta">
+					<http:query-params><![CDATA[#[output application/json
+---
+{
+    "trip": "true",
+    "round_trip": "true",
+    "connection": "false"
+}]]]></http:query-params>
+				</http:request>
+			</route>
+			<route >
+				<http:request method="POST" doc:name="UNITED REQUEST" doc:id="6b89db59-b4b7-4280-843a-44f5d074391d" config-ref="HTTP_Request_configuratio_united" path="${united.path}">
+				<http:query-params><![CDATA[#[output application/json
+---
+{
+    "trip": "true",
+    "round_trip": "true",
+    "connection": "false"
+}]]]></http:query-params>
+			</http:request>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="ec7a7b31-ffba-4714-b169-aae2b6438447">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4dffb5d2-2499-4923-92c4-4db28eda83b4" message="#[payload]"/>
+	</flow>
+</mule>

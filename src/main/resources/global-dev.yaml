@@ -1,0 +1,12 @@
+united:
+  host: "localhost"
+  path: "/united"
+  port: "8082"
+  protocol: "HTTP"
+  
+  
+delta:
+  host: "localhost"
+  path: "/delta"
+  port: "8087"
+  protocol: "HTTP"
